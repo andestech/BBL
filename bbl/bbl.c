@@ -36,7 +36,8 @@ static void filter_dtb(uintptr_t source)
   // Remove information from the chained FDT
   filter_harts(dest, &disabled_hart_mask);
   filter_plic(dest);
-  filter_compat(dest, "riscv,clint0");
+  //filter_compat(dest, "riscv,clint0");
+  filter_compat(dest, "riscv,plmt0");
   filter_compat(dest, "riscv,debug-013");
 }
 

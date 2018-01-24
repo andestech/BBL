@@ -368,6 +368,93 @@ void query_clint(uintptr_t fdt)
   assert (scan.done);
 }
 
+///////////////////////////////////////////// PLMT SCAN /////////////////////////////////////////
+
+struct plmt_scan
+{
+  int compat;
+  uint64_t reg;
+  const uint32_t *int_value;
+  int int_len;
+  int done;
+};
+
+static void plmt_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct plmt_scan *scan = (struct plmt_scan *)extra;
+  scan->compat = 0;
+  scan->reg = 0;
+  scan->int_value = 0;
+}
+
+static void plmt_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct plmt_scan *scan = (struct plmt_scan *)extra;
+  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "riscv,plmt0") >= 0) {
+    scan->compat = 1;
+  } else if (!strcmp(prop->name, "reg")) {
+    fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+  } else if (!strcmp(prop->name, "interrupts-extended")) {
+    scan->int_value = prop->value;
+    scan->int_len = prop->len;
+  }
+}
+
+static void plmt_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct plmt_scan *scan = (struct plmt_scan *)extra;
+  const uint32_t *value = scan->int_value;
+  const uint32_t *end = value + scan->int_len/4;
+
+  if (!scan->compat) return;
+  assert (scan->reg != 0);
+  assert (scan->int_value && scan->int_len % 8 == 0);
+  assert (!scan->done); // only one plmt
+
+  scan->done = 1;
+
+  mtime = (void*)((uintptr_t)scan->reg);
+
+  for (int index = 0; end - value > 0; ++index) {
+    uint32_t phandle = bswap(value[0]);
+    uint32_t cpu_int = bswap(value[1]);
+    assert (cpu_int == IRQ_M_TIMER);
+
+    int hart;
+    for (hart = 0; hart < MAX_HARTS; ++hart)
+      if (hart_phandles[hart] == phandle)
+        break;
+
+    if (hart < MAX_HARTS) {
+      hls_t *hls = OTHER_HLS(hart);
+      hls->timecmp = (void*)((uintptr_t)scan->reg + 0x8 + (index * 8));
+      /*
+       * FIXME:
+       * kernel not support IPI device now
+       * mapped IPI to address of PLMT temporary
+       * the offset 0x200 is after mtimecmp maximum address 0x100
+       */
+      hls->ipi = (void*)((uintptr_t)scan->reg + 0x200 + (index * 4));
+    }
+    value += 2;
+  }
+}
+
+void query_plmt(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct plmt_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = plmt_open;
+  cb.prop = plmt_prop;
+  cb.done = plmt_done;
+  cb.extra = &scan;
+
+  scan.done = 0;
+  fdt_scan(fdt, &cb);
+}
+
 ///////////////////////////////////////////// PLIC SCAN /////////////////////////////////////////
 
 struct plic_scan
