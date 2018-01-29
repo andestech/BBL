@@ -365,7 +365,6 @@ void query_clint(uintptr_t fdt)
 
   scan.done = 0;
   fdt_scan(fdt, &cb);
-  assert (scan.done);
 }
 
 ///////////////////////////////////////////// PLMT SCAN /////////////////////////////////////////
