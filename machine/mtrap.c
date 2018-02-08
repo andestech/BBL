@@ -21,6 +21,7 @@ void __attribute__((noreturn)) bad_trap(uintptr_t* regs, uintptr_t dummy, uintpt
   die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), mepc);
 }
 
+#if 1
 static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   if (uart) {
@@ -32,6 +33,16 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
   }
   return 0;
 }
+#else
+#define writel(v,a)       (*(volatile unsigned int*)(a) = (v))
+#define readl(a)          (*(volatile unsigned int*)(a))
+static uintptr_t mcall_console_putchar(uint8_t ch)
+{
+  while (!(readl(0xf0300020 + (5 << 2)) & 0x20)) ;
+  writel(ch, 0xf0300020 + (0 << 2));
+  return 0;
+}
+#endif
 
 void putstring(const char* s)
 {
