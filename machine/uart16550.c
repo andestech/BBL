@@ -28,6 +28,7 @@ struct uart16550_scan
 {
   int compat;
   uint64_t reg;
+  uint32_t off;
 };
 
 static void uart16550_open(const struct fdt_scan_node *node, void *extra)
@@ -43,6 +44,9 @@ static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
     scan->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+    scan->off = 0;
+  } else if (!strcmp(prop->name, "reg-offset")) {
+    fdt_get_prop(prop->node->parent, prop->value, &scan->off);
   }
 }
 
@@ -51,7 +55,7 @@ static void uart16550_done(const struct fdt_scan_node *node, void *extra)
   struct uart16550_scan *scan = (struct uart16550_scan *)extra;
   if (!scan->compat || !scan->reg || uart16550) return;
 
-  uart16550 = (void*)(uintptr_t)scan->reg;
+  uart16550 = (void*)(uintptr_t)(scan->reg + scan->off);
   // http://wiki.osdev.org/Serial_Ports
   uart16550[1] = 0x00;    // Disable all interrupts
   uart16550[3] = 0x80;    // Enable DLAB (set baud rate divisor)

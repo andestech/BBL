@@ -126,6 +126,13 @@ const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *v
   return value;
 }
 
+const uint32_t *fdt_get_prop(const struct fdt_scan_node *node, const uint32_t *value, uint32_t *result)
+{
+  *result = 0;
+    *result = (*result) + bswap(*value);
+  return value;
+}
+
 int fdt_string_list_index(const struct fdt_scan_prop *prop, const char *str)
 {
   const char *list = (const char *)prop->value;
