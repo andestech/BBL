@@ -4,7 +4,11 @@
 #include "uart16550.h"
 #include "fdt.h"
 
+#if ATCUART100 == 1
+volatile uint32_t* uart16550;
+#else
 volatile uint8_t* uart16550;
+#endif
 
 #define UART_REG_QUEUE     0
 #define UART_REG_LINESTAT  5
@@ -42,6 +46,10 @@ static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
   struct uart16550_scan *scan = (struct uart16550_scan *)extra;
   if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "ns16550a")) {
     scan->compat = 1;
+#if ATCUART100 == 1
+  } else if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "andestech,uart16550")) {
+    scan->compat = 1;
+#endif
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
     scan->off = 0;
@@ -57,12 +65,14 @@ static void uart16550_done(const struct fdt_scan_node *node, void *extra)
 
   uart16550 = (void*)(uintptr_t)(scan->reg + scan->off);
   // http://wiki.osdev.org/Serial_Ports
+#if ATCUART100 == 0
   uart16550[1] = 0x00;    // Disable all interrupts
   uart16550[3] = 0x80;    // Enable DLAB (set baud rate divisor)
   uart16550[0] = 0x03;    // Set divisor to 3 (lo byte) 38400 baud
   uart16550[1] = 0x00;    //                  (hi byte)
   uart16550[3] = 0x03;    // 8 bits, no parity, one stop bit
   uart16550[2] = 0xC7;    // Enable FIFO, clear them, with 14-byte threshold
+#endif
 }
 
 void query_uart16550(uintptr_t fdt)
