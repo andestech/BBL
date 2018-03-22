@@ -427,13 +427,6 @@ static void plmt_done(const struct fdt_scan_node *node, void *extra)
     if (hart < MAX_HARTS) {
       hls_t *hls = OTHER_HLS(hart);
       hls->timecmp = (void*)((uintptr_t)scan->reg + 0x8 + (index * 8));
-      /*
-       * FIXME:
-       * kernel not support IPI device now
-       * mapped IPI to address of PLMT temporary
-       * the offset 0x200 is after mtimecmp maximum address 0x100
-       */
-      hls->ipi = (void*)((uintptr_t)scan->reg + 0x200 + (index * 4));
     }
     value += 2;
   }
@@ -579,6 +572,87 @@ void filter_plic(uintptr_t fdt)
   cb.open = plic_open;
   cb.prop = plic_prop;
   cb.done = plic_redact;
+  cb.extra = &scan;
+
+  scan.done = 0;
+  fdt_scan(fdt, &cb);
+}
+
+///////////////////////////////////////////// PLIC-SW SCAN /////////////////////////////////////////
+
+struct plicsw_scan
+{
+  int compat;
+  uint64_t reg;
+  uint32_t *int_value;
+  int int_len;
+  int done;
+};
+
+static void plicsw_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct plicsw_scan *scan = (struct plicsw_scan *)extra;
+  scan->compat = 0;
+  scan->reg = 0;
+  scan->int_value = 0;
+}
+
+static void plicsw_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct plicsw_scan *scan = (struct plicsw_scan *)extra;
+  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "riscv,plic1") >= 0) {
+    scan->compat = 1;
+  } else if (!strcmp(prop->name, "reg")) {
+    fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+  } else if (!strcmp(prop->name, "interrupts-extended")) {
+    scan->int_value = prop->value;
+    scan->int_len = prop->len;
+  }
+}
+
+static void plicsw_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct plicsw_scan *scan = (struct plicsw_scan *)extra;
+  const uint32_t *value = scan->int_value;
+  const uint32_t *end = value + scan->int_len/4;
+
+  if (!scan->compat) return;
+  assert (scan->reg != 0);
+  assert (scan->int_value && scan->int_len % 8 == 0);
+  assert (!scan->done); // only one plic
+
+  scan->done = 1;
+
+  for (int index = 0; end - value > 0; ++index) {
+    uint32_t phandle = bswap(value[0]);
+    uint32_t cpu_int = bswap(value[1]);
+
+    int hart;
+    for (hart = 0; hart < MAX_HARTS; ++hart)
+      if (hart_phandles[hart] == phandle)
+        break;
+
+    if (hart < MAX_HARTS) {
+      if (cpu_int == IRQ_M_SOFT) {
+        hls_t *hls = OTHER_HLS(hart);
+        hls->ipi = (void*)((uintptr_t)scan->reg + (index * 4));
+      } else {
+        printm("PLIC-SW wired hart %d to wrong interrupt %d", hart, cpu_int);
+      }
+    }
+    value += 2;
+  }
+}
+
+void query_plicsw(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct plicsw_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = plicsw_open;
+  cb.prop = plicsw_prop;
+  cb.done = plicsw_done;
   cb.extra = &scan;
 
   scan.done = 0;

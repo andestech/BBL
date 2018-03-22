@@ -38,6 +38,7 @@ static void filter_dtb(uintptr_t source)
   filter_plic(dest);
   //filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,plmt0");
+  filter_compat(dest, "riscv,plic1");
   filter_compat(dest, "riscv,debug-013");
 }
 

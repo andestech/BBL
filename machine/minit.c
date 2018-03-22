@@ -170,6 +170,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_harts(dtb);
   query_clint(dtb);
   query_plmt(dtb);
+  query_plicsw(dtb);
   query_plic(dtb);
   query_chosen(dtb);
 
