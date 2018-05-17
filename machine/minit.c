@@ -195,6 +195,11 @@ void setup_pmp(void)
   // Set up a PMP to permit access to all of memory.
   // Ignore the illegal-instruction trap if PMPs aren't supported.
   uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
+
+  // Enable cache
+  uintptr_t mcache_ctl = read_csr(mcache_ctl);
+  write_csr(mcache_ctl, mcache_ctl | 3);
+
   asm volatile ("la t0, 1f\n\t"
                 "csrrw t0, mtvec, t0\n\t"
                 "csrw pmpaddr0, %1\n\t"
