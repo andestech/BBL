@@ -264,10 +264,9 @@ do_reset:
 clear_bss:
 	la t0, _bss_start
 	la t1, _bss_end
-	li t2, 0x00000000
 clbss_l:
-	sd t2, 0(t0)
-	addi t0, t0, 8
+	STORE zero, 0(t0)
+	addi t0, t0, REGBYTES
 	ble t0, t1, clbss_l
 
   la sp, stacks + RISCV_PGSIZE - MENTRY_FRAME_SIZE
