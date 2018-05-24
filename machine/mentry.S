@@ -261,23 +261,28 @@ do_reset:
   csrr t1, mtvec
 1:bne t0, t1, 1b
 
-clear_bss:
-	la t0, _bss_start
-	la t1, _bss_end
-clbss_l:
-	STORE zero, 0(t0)
-	addi t0, t0, REGBYTES
-	ble t0, t1, clbss_l
-
   la sp, stacks + RISCV_PGSIZE - MENTRY_FRAME_SIZE
 
   csrr a3, mhartid
   slli a2, a3, RISCV_PGSHIFT
   add sp, sp, a2
 
-  # Boot on the first hart
-  beqz a3, init_first_hart
+  # Let other hart wfi
+  bnez a3, 2f
 
+  # Only hart 0 shall clear bss section
+clear_bss:
+  la t0, _bss_start
+  la t1, _bss_end
+clbss_l:
+  STORE zero, 0(t0)
+  addi t0, t0, REGBYTES
+  ble t0, t1, clbss_l
+
+  # Boot on the first hart
+  j init_first_hart
+
+2:
   # set MSIE bit to receive IPI
   li a2, MIP_MSIP
   csrw mie, a2
