@@ -198,7 +198,7 @@ void setup_pmp(void)
 
   // Enable cache
   uintptr_t mcache_ctl = read_csr(mcache_ctl);
-  write_csr(mcache_ctl, mcache_ctl | 1);
+  write_csr(mcache_ctl, mcache_ctl | 3);
 
   asm volatile ("la t0, 1f\n\t"
                 "csrrw t0, mtvec, t0\n\t"
