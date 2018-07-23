@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#define ATCUART100 0
+#define ATCUART100 1
 
 #if ATCUART100 == 1
 extern volatile uint32_t* uart16550;
