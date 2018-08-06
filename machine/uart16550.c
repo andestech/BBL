@@ -50,7 +50,6 @@ static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
     scan->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
-    scan->off = 0;
   } else if (!strcmp(prop->name, "reg-offset")) {
     fdt_get_prop(prop->node->parent, prop->value, &scan->off);
   }
