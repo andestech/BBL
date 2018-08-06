@@ -44,12 +44,10 @@ static void uart16550_open(const struct fdt_scan_node *node, void *extra)
 static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct uart16550_scan *scan = (struct uart16550_scan *)extra;
-  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "ns16550a")) {
+  if (!strcmp(prop->name, "compatible") &&
+	 ((!strcmp((const char*)prop->value, "ns16550a")) ||
+	  (!strcmp((const char*)prop->value, "andestech,uart16550")))) {
     scan->compat = 1;
-#if ATCUART100 == 1
-  } else if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "andestech,uart16550")) {
-    scan->compat = 1;
-#endif
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
     scan->off = 0;
