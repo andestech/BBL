@@ -10,6 +10,7 @@
 #include "finisher.h"
 #include "disabled_hart_mask.h"
 #include "htif.h"
+#include "trigger.h"
 #include <string.h>
 #include <limits.h>
 
@@ -180,6 +181,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   hart_plic_init();
   //prci_test();
   memory_init();
+  trigger_init();
   boot_loader(dtb);
 }
 

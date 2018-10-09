@@ -18,6 +18,7 @@ machine_hdrs = \
   finisher.h \
   unprivileged_memory.h \
   vm.h \
+  trigger.h \
 
 machine_c_srcs = \
   fdt.c \
@@ -33,6 +34,7 @@ machine_c_srcs = \
   finisher.c \
   misaligned_ldst.c \
   flush_icache.c \
+  trigger.c \
 
 machine_asm_srcs = \
   mentry.S \

@@ -12,6 +12,7 @@
 #include "fdt.h"
 #include "unprivileged_memory.h"
 #include "disabled_hart_mask.h"
+#include "trigger.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -94,6 +95,29 @@ static uintptr_t mcall_set_timer(uint64_t when)
   return 0;
 }
 
+static uintptr_t mcall_set_trigger(long type, uintptr_t data, unsigned int m,
+                                   unsigned int s, unsigned int u)
+{
+  int ret;
+
+  switch (type)
+  {
+    case TRIGGER_TYPE_ICOUNT:
+      ret = trigger_set_icount(data, m, s, u);
+      break;
+    case TRIGGER_TYPE_ITRIGGER:
+      ret = trigger_set_itrigger(data, m, s, u);
+      break;
+    case TRIGGER_TYPE_ETRIGGER:
+      ret = trigger_set_etrigger(data, m, s, u);
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
   _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
@@ -128,7 +152,7 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   write_csr(mepc, mepc + 4);
 
-  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval, ipi_type;
+  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12], retval, ipi_type;
 
   switch (n)
   {
@@ -163,6 +187,9 @@ send_ipi:
 #else
       retval = mcall_set_timer(arg0);
 #endif
+      break;
+    case SBI_TRIGGER:
+      retval = mcall_set_trigger(arg0, arg1, 0, 0, arg2);
       break;
     default:
       retval = -ENOSYS;
