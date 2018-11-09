@@ -56,8 +56,8 @@
 #define ETRIGGER_OFFSET_U	6
 #define ETRIGGER_OFFSET_ACTION	0
 
-#define TRIGGER_SUPPORT(n)	(n <= total_triggers)
-#define TRIGGER_SUPPORT_TYPE(n, type) ({	\
+#define TRIGGER_SUPPORT(n)	(n < total_triggers)
+#define TRIGGER_SUPPORT_TYPE(type) ({		\
   uintptr_t __tmp;				\
   uintptr_t __tinfo = read_csr(tinfo);		\
   __tmp = (__tinfo & (1 << type));		\
