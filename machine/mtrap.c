@@ -95,6 +95,13 @@ static uintptr_t mcall_set_timer(uint64_t when)
   return 0;
 }
 
+static uintptr_t mcall_set_pfm()
+{
+  clear_csr(slip, MIP_SOVFIP);
+  set_csr(mie, MIP_MOVFIP);
+  return 0;
+}
+
 static uintptr_t mcall_set_trigger(long type, uintptr_t data, unsigned int m,
                                    unsigned int s, unsigned int u)
 {
@@ -195,6 +202,9 @@ send_ipi:
       break;
     case SBI_TRIGGER:
       retval = mcall_set_trigger(arg0, arg1, 0, 0, arg2);
+      break;
+    case SBI_SET_PFM:
+      retval = mcall_set_pfm();
       break;
     default:
       retval = -ENOSYS;

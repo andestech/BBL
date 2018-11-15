@@ -33,9 +33,16 @@ static void mstatus_init()
     write_csr(scounteren, -1);
   write_csr(mcounteren, -1);
 
+  // Enable perf counters interrupts
+  // write_csr(mcounterinten, 0x1);
+
+  // Enable counter write
+  write_csr(mcounterwen, 0xfffffffd);
+
   // Enable software interrupts
   write_csr(mie, MIP_MSIP);
-
+  write_csr(slie, MIP_MOVFIP);
+  write_csr(mcountermask_m, 0xfffffffd);
   // Disable paging
   if (supports_extension('S'))
     write_csr(sptbr, 0);
@@ -48,6 +55,7 @@ static void delegate_traps()
     return;
 
   uintptr_t interrupts = MIP_SSIP | MIP_STIP | MIP_SEIP;
+  uintptr_t local_interrupts = MIP_MOVFIP;
   uintptr_t exceptions =
     (1U << CAUSE_MISALIGNED_FETCH) |
     (1U << CAUSE_FETCH_PAGE_FAULT) |
@@ -56,10 +64,13 @@ static void delegate_traps()
     (1U << CAUSE_STORE_PAGE_FAULT) |
     (1U << CAUSE_USER_ECALL);
 
+
   write_csr(mideleg, interrupts);
+  write_csr(mslideleg, local_interrupts);
   write_csr(medeleg, exceptions);
   assert(read_csr(mideleg) == interrupts);
   assert(read_csr(medeleg) == exceptions);
+  assert(read_csr(mslideleg) == local_interrupts);
 }
 
 static void fp_init()

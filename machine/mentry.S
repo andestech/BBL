@@ -49,6 +49,19 @@ trap_vector:
   # This is an interrupt.  Discard the mcause MSB and decode the rest.
   sll a1, a1, 1
 
+  # Is it a pfm interrupt?
+  li a0, 18 * 2
+  bne a0, a1, .Timer
+
+  #li a0, 0x40000
+  #csrs slie, a0
+  li a0, 0x40000
+  csrc mie, a0
+  li a0, 0x40000
+  csrs slip, a0
+  j .Lmret
+
+.Timer:
   # Is it a machine timer interrupt?
   li a0, IRQ_M_TIMER * 2
   bne a0, a1, 1f
