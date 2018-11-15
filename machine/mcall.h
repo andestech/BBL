@@ -14,5 +14,6 @@
 #define SBI_SHUTDOWN 8
 #define SBI_TRIGGER 9
 #define SBI_SET_PFM 10
-
+#define SBI_READ_POWERBRAKE 11
+#define SBI_WRITE_POWERBRAKE 12
 #endif

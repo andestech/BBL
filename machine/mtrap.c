@@ -102,6 +102,17 @@ static uintptr_t mcall_set_pfm()
   return 0;
 }
 
+static uintptr_t mcall_read_powerbrake()
+{
+  return read_csr(mpft_ctl);
+}
+
+static uintptr_t mcall_write_powerbrake(int val)
+{
+  write_csr(mpft_ctl, val);
+  return 0;
+}
+
 static uintptr_t mcall_set_trigger(long type, uintptr_t data, unsigned int m,
                                    unsigned int s, unsigned int u)
 {
@@ -205,6 +216,12 @@ send_ipi:
       break;
     case SBI_SET_PFM:
       retval = mcall_set_pfm();
+      break;
+    case SBI_READ_POWERBRAKE:
+      retval = mcall_read_powerbrake();
+      break;
+    case SBI_WRITE_POWERBRAKE:
+      retval = mcall_write_powerbrake(arg0);
       break;
     default:
       retval = -ENOSYS;
