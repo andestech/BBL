@@ -138,7 +138,7 @@ int trigger_set_icount(uintptr_t count, unsigned int m,
 
   if (u) {
     trigger_modules[num].used = 1;
-    trigger_modules[num].type = TRIGGER_TYPE_ITRIGGER;
+    trigger_modules[num].type = TRIGGER_TYPE_ICOUNT;
   } else {
     trigger_modules[num].used = 0;
   }
@@ -230,7 +230,7 @@ int trigger_set_etrigger(uintptr_t exception, unsigned int m,
 
   if (u) {
     trigger_modules[num].used = 1;
-    trigger_modules[num].type = TRIGGER_TYPE_ITRIGGER;
+    trigger_modules[num].type = TRIGGER_TYPE_ETRIGGER;
   } else {
     trigger_modules[num].used = 0;
   }
