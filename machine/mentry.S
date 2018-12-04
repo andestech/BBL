@@ -72,8 +72,10 @@ trap_vector:
   bne a0, a1, .Lbad_trap
 
   # Yes.  First, clear the MIPI bit.
-  LOAD a0, MENTRY_IPI_OFFSET(sp)
-  sw x0, (a0)
+  # PLIC_SW Claim
+  LOAD a0, MENTRY_PLIC_SW_CLAIM(sp)
+  lw a1, (a0)
+  sw a1, MENTRY_PLIC_SW_SOURCE_ID(sp)
   fence
 
   # Now, decode the cause(s).
@@ -101,6 +103,10 @@ trap_vector:
   wfi
   j 1b
 1:
+  /* PLIC_SW Complete */
+  LOAD a1, MENTRY_PLIC_SW_CLAIM(sp)
+  lw a0, MENTRY_PLIC_SW_SOURCE_ID(sp)
+  sw a0, (a1)
   j .Lmret
 
 

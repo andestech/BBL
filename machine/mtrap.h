@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include "plic_sw.h"
 
 #define read_const_csr(reg) ({ unsigned long __tmp; \
   asm ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -46,6 +47,8 @@ typedef struct {
   volatile uintptr_t* plic_m_ie;
   volatile uint32_t* plic_s_thresh;
   volatile uintptr_t* plic_s_ie;
+
+  plic_sw_t plic_sw;
 } hls_t;
 
 #define MACHINE_STACK_TOP() ({ \
@@ -90,13 +93,20 @@ static inline void wfi()
 #define MENTRY_FRAME_SIZE (MENTRY_HLS_OFFSET + HLS_SIZE)
 #define MENTRY_IPI_OFFSET (MENTRY_HLS_OFFSET)
 #define MENTRY_IPI_PENDING_OFFSET (MENTRY_HLS_OFFSET + REGBYTES)
+#define MENTRY_PLIC_SW_OFFSET (MENTRY_HLS_OFFSET + REGBYTES * 7)
+#define MENTRY_PLIC_SW_SOURCE_ID (MENTRY_PLIC_SW_OFFSET + 4)
+#if __riscv_xlen == 64
+#define MENTRY_PLIC_SW_CLAIM (MENTRY_PLIC_SW_OFFSET + REGBYTES * 3)
+#else
+#define MENTRY_PLIC_SW_CLAIM (MENTRY_PLIC_SW_OFFSET + REGBYTES * 4)
+#endif
 
 #ifdef __riscv_flen
 # define SOFT_FLOAT_CONTEXT_SIZE 0
 #else
 # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)
 #endif
-#define HLS_SIZE 64
+#define HLS_SIZE 96
 #define INTEGER_CONTEXT_SIZE (32 * REGBYTES)
 
 #endif

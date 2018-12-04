@@ -84,6 +84,7 @@ hls_t* hls_init(uintptr_t id)
 {
   hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));
+  hls->plic_sw.hart_id = id;
   return hls;
 }
 
@@ -150,7 +151,7 @@ static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
     if ((((~disabled_hart_mask & hart_mask) >> hart) & 1))
-      *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
+      plic_sw_pending(&HLS()->plic_sw, hart);
 }
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
@@ -187,6 +188,11 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
 void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
+  // ipi wake up wfi under MSTATUS_MIE off, i.e. no software trap raised.
+  // plicsw pending bit has to be clear here
+  plic_sw_claim(&HLS()->plic_sw);
+  plic_sw_complete(&HLS()->plic_sw);
+
   hart_init();
   hart_plic_init();
   boot_other_hart(dtb);

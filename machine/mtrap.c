@@ -61,7 +61,7 @@ static void send_ipi(uintptr_t recipient, int event)
   if (((disabled_hart_mask >> recipient) & 1)) return;
   atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
   mb();
-  *OTHER_HLS(recipient)->ipi = 1;
+  plic_sw_pending(&HLS()->plic_sw, recipient);
 }
 
 static uintptr_t mcall_console_getchar()

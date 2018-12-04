@@ -19,6 +19,7 @@ machine_hdrs = \
   unprivileged_memory.h \
   vm.h \
   trigger.h \
+  plic_sw.h \
 
 machine_c_srcs = \
   fdt.c \
@@ -35,6 +36,7 @@ machine_c_srcs = \
   misaligned_ldst.c \
   flush_icache.c \
   trigger.c \
+  plic_sw.c \
 
 machine_asm_srcs = \
   mentry.S \
