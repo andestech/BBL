@@ -594,6 +594,7 @@ struct plicsw_scan
   uint32_t *int_value;
   int int_len;
   int done;
+  int ndev;
 };
 
 static void plicsw_open(const struct fdt_scan_node *node, void *extra)
@@ -614,6 +615,8 @@ static void plicsw_prop(const struct fdt_scan_prop *prop, void *extra)
   } else if (!strcmp(prop->name, "interrupts-extended")) {
     scan->int_value = prop->value;
     scan->int_len = prop->len;
+  } else if (!strcmp(prop->name, "riscv,ndev")) {
+    scan->ndev = bswap(prop->value[0]);
   }
 }
 
@@ -626,9 +629,28 @@ static void plicsw_done(const struct fdt_scan_node *node, void *extra)
   if (!scan->compat) return;
   assert (scan->reg != 0);
   assert (scan->int_value && scan->int_len % 8 == 0);
-  assert (!scan->done); // only one plic
+  assert (scan->ndev > 0 && scan->ndev < MAX_HARTS);
+  assert (!scan->done); // only one plicsw
 
   scan->done = 1;
+
+  size_t plicsw_ndevs = scan->ndev;
+
+  /* Setup source priority */
+  uint32_t *priority = (void*)((uintptr_t)scan->reg + SW_PRIORITY_BASE);
+  for (int i = 0; i < (plicsw_ndevs * SW_PENDING_PER_HART); ++i)
+    priority[i] = 1;
+
+  /* Setup target enable. Only enable the own corresponding interrput souce.
+   * Please see plic_sw.c
+   */
+  uint32_t enable_mask = 0x80808080;
+  for (int i = 0; i < plicsw_ndevs; ++i) {
+    uint32_t *enable = (void*)((uintptr_t)scan->reg + SW_ENABLE_BASE
+                                          + SW_ENABLE_PER_HART * i);
+    enable[0] = enable_mask;
+    enable_mask >>= 1;
+  }
 
   for (int index = 0; end - value > 0; ++index) {
     uint32_t phandle = bswap(value[0]);
@@ -642,7 +664,15 @@ static void plicsw_done(const struct fdt_scan_node *node, void *extra)
     if (hart < MAX_HARTS) {
       if (cpu_int == IRQ_M_SOFT) {
         hls_t *hls = OTHER_HLS(hart);
-        hls->ipi = (void*)((uintptr_t)scan->reg + (index * 4));
+        hls->plic_sw.pending = (void*)((uintptr_t)scan->reg
+                                       + SW_PENDING_BASE + ((index / 4) * 4));
+        hls->plic_sw.claim = (void*)((uintptr_t)scan->reg +
+                                      + SW_CONTEXT_BASE + SW_CONTEXT_CLAIM
+                                      + SW_CONTEXT_PER_HART * index);
+        hls->plic_sw.enable = (void*)((uintptr_t)scan->reg + SW_ENABLE_BASE
+                                      + SW_ENABLE_PER_HART * index);
+        /* The hls->ipi data member is not used anymore for V5. */
+	hls->ipi = 0;
       } else {
         printm("PLIC-SW wired hart %d to wrong interrupt %d", hart, cpu_int);
       }
