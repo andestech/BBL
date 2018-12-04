@@ -49,6 +49,7 @@ typedef struct {
   volatile uintptr_t* plic_s_ie;
 
   plic_sw_t plic_sw;
+  volatile uint64_t* time; /* TODO: boot fail when move this line up */
 } hls_t;
 
 #define MACHINE_STACK_TOP() ({ \

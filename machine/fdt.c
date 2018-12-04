@@ -382,7 +382,7 @@ struct plmt_scan
   uint64_t reg;
   const uint32_t *int_value;
   int int_len;
-  int done;
+  uint32_t count;
 };
 
 static void plmt_open(const struct fdt_scan_node *node, void *extra)
@@ -396,7 +396,9 @@ static void plmt_open(const struct fdt_scan_node *node, void *extra)
 static void plmt_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct plmt_scan *scan = (struct plmt_scan *)extra;
-  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "riscv,plmt0") >= 0) {
+  if (!strcmp(prop->name, "compatible")
+      && (fdt_string_list_index(prop, "riscv,plmt0") >= 0
+          || fdt_string_list_index(prop, "riscv,plmt1") >= 0)) {
     scan->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
@@ -415,11 +417,6 @@ static void plmt_done(const struct fdt_scan_node *node, void *extra)
   if (!scan->compat) return;
   assert (scan->reg != 0);
   assert (scan->int_value && scan->int_len % 8 == 0);
-  assert (!scan->done); // only one plmt
-
-  scan->done = 1;
-
-  mtime = (void*)((uintptr_t)scan->reg);
 
   for (int index = 0; end - value > 0; ++index) {
     uint32_t phandle = bswap(value[0]);
@@ -433,7 +430,14 @@ static void plmt_done(const struct fdt_scan_node *node, void *extra)
 
     if (hart < MAX_HARTS) {
       hls_t *hls = OTHER_HLS(hart);
-      hls->timecmp = (void*)((uintptr_t)scan->reg + 0x8 + (index * 8));
+
+      assert (!hls->time && !hls->timecmp);
+      /* Each hart has own time */
+      hls->time = (void*)((uintptr_t)scan->reg);
+      /* Each hart has own timecmp */
+      hls->timecmp = (void*)((uintptr_t)scan->reg + 0x8);
+
+      scan->count |= 1 << hart;
     }
     value += 2;
   }
@@ -450,8 +454,12 @@ void query_plmt(uintptr_t fdt)
   cb.done = plmt_done;
   cb.extra = &scan;
 
-  scan.done = 0;
+  scan.count = 0;
+
   fdt_scan(fdt, &cb);
+
+  /* PLMT number is equal HART number */
+  assert (scan.count == hart_mask);
 }
 
 ///////////////////////////////////////////// PLIC SCAN /////////////////////////////////////////
