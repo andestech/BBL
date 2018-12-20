@@ -152,7 +152,7 @@ static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
     if ((((~disabled_hart_mask & hart_mask) >> hart) & 1))
-      plic_sw_pending(&HLS()->plic_sw, hart);
+      plic_sw_pending(hart);
 }
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
@@ -191,8 +191,8 @@ void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
   // ipi wake up wfi under MSTATUS_MIE off, i.e. no software trap raised.
   // plicsw pending bit has to be clear here
-  plic_sw_claim(&HLS()->plic_sw);
-  plic_sw_complete(&HLS()->plic_sw);
+  plic_sw_claim();
+  plic_sw_complete();
 
   hart_init();
   hart_plic_init();

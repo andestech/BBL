@@ -61,7 +61,7 @@ static void send_ipi(uintptr_t recipient, int event)
   if (((disabled_hart_mask >> recipient) & 1)) return;
   atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
   mb();
-  plic_sw_pending(&HLS()->plic_sw, recipient);
+  plic_sw_pending(recipient);
 }
 
 static uintptr_t mcall_console_getchar()
@@ -138,17 +138,17 @@ static void send_ipi_many(uintptr_t* pmask, int event)
   uint32_t incoming_ipi = 0;
   for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
     if (m & 1)
-      while (plic_sw_get_pending(&HLS()->plic_sw, i)) {
-        plic_sw_claim(&HLS()->plic_sw);
+      while (plic_sw_get_pending(i)) {
+        plic_sw_claim();
         if (HLS()->plic_sw.source_id) {
           incoming_ipi |= 1 << (HLS()->plic_sw.source_id);
-          plic_sw_complete(&HLS()->plic_sw);
+          plic_sw_complete();
         }
       }
 
   // if we got an IPI, restore it; it will be taken after returning
   if (incoming_ipi) {
-    plic_sw_pending(&HLS()->plic_sw, read_csr(mhartid));
+    plic_sw_pending(read_csr(mhartid));
     mb();
   }
 }

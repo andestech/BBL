@@ -2,22 +2,22 @@
 #include "mtrap.h"
 #include "plic_sw.h"
 
-inline void plic_sw_claim(plic_sw_t *plic)
+inline void plic_sw_claim(void)
 {
-  plic->source_id = *(plic->claim);
+  HLS()->plic_sw.source_id = *(HLS()->plic_sw.claim);
 }
 
-inline void plic_sw_complete(plic_sw_t *plic)
+inline void plic_sw_complete(void)
 {
-  *(plic->claim) = plic->source_id;
+  *(HLS()->plic_sw.claim) = HLS()->plic_sw.source_id;
 }
 
-inline uint32_t plic_sw_get_pending(plic_sw_t *plic, uint32_t who)
+inline uint32_t plic_sw_get_pending(uint32_t who)
 {
-  return *(plic->pending) & (SW_HART_MASK >> who);
+  return *(HLS()->plic_sw.pending) & (SW_HART_MASK >> who);
 }
 
-inline void plic_sw_pending(plic_sw_t *plic, int to)
+inline void plic_sw_pending(int to)
 {
   /* The pending array registers are w1s type.
    *
@@ -41,6 +41,6 @@ inline void plic_sw_pending(plic_sw_t *plic, int to)
    */
   assert(to < MAX_HARTS);
   uint32_t core_offset = (SW_PENDING_PER_HART - 1) - to;
-  uint32_t per_hart_offset = SW_PENDING_PER_HART * plic->hart_id;
-  *(plic->pending) = 1 << core_offset << per_hart_offset;
+  uint32_t per_hart_offset = SW_PENDING_PER_HART * HLS()->plic_sw.hart_id;
+  *(HLS()->plic_sw.pending) = 1 << core_offset << per_hart_offset;
 }

@@ -26,16 +26,16 @@ typedef struct {
 } plic_sw_t;
 
 /* Claim interrupt to clean interrupt pending bit*/
-void plic_sw_claim(plic_sw_t *plic);
+void plic_sw_claim(void);
 
 /* Complete interrupt to get next interrupt */
-void plic_sw_complete(plic_sw_t *plic);
+void plic_sw_complete(void);
 
 /* Trigger software interrupt to another hart */
-void plic_sw_pending(plic_sw_t *plic, int to);
+void plic_sw_pending(int to);
 
 /* Get pending status of specific hart */
-uint32_t plic_sw_get_pending(plic_sw_t* plic, uint32_t who);
+uint32_t plic_sw_get_pending(uint32_t who);
 
 void plic_sw_init(plic_sw_t *plic);
 
