@@ -37,6 +37,4 @@ void plic_sw_pending(int to);
 /* Get pending status of specific hart */
 uint32_t plic_sw_get_pending(uint32_t who);
 
-void plic_sw_init(plic_sw_t *plic);
-
 #endif /* _RISCV_PLIC_SW_H */
