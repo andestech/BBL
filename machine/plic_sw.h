@@ -15,6 +15,8 @@
 #define SW_CONTEXT_PER_HART	0x1000
 #define SW_CONTEXT_CLAIM	0x4
 
+#define SW_HART_MASK		0x80808080
+
 typedef struct {
   int hart_id;
   int source_id;
@@ -31,6 +33,9 @@ void plic_sw_complete(plic_sw_t *plic);
 
 /* Trigger software interrupt to another hart */
 void plic_sw_pending(plic_sw_t *plic, int to);
+
+/* Get pending status of specific hart */
+uint32_t plic_sw_get_pending(plic_sw_t* plic, uint32_t who);
 
 void plic_sw_init(plic_sw_t *plic);
 

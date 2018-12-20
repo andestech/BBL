@@ -12,6 +12,11 @@ inline void plic_sw_complete(plic_sw_t *plic)
   *(plic->claim) = plic->source_id;
 }
 
+inline uint32_t plic_sw_get_pending(plic_sw_t *plic, uint32_t who)
+{
+  return *(plic->pending) & (SW_HART_MASK >> who);
+}
+
 inline void plic_sw_pending(plic_sw_t *plic, int to)
 {
   /* The pending array registers are w1s type.
