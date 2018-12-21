@@ -170,7 +170,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
     case CSR_TIME:
       if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
-      *result = *HLS()->time;
+      *result = *mtime;
       return 0;
     case CSR_INSTRET:
       if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
@@ -196,7 +196,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
     case CSR_TIMEH:
       if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
-      *result = *HLS()->time >> 32;
+      *result = *mtime >> 32;
       return 0;
     case CSR_INSTRETH:
       if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
