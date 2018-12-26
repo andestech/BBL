@@ -644,7 +644,7 @@ static void plicsw_done(const struct fdt_scan_node *node, void *extra)
   /* Setup target enable. Only enable the own corresponding interrput souce.
    * Please see plic_sw.c
    */
-  uint32_t enable_mask = 0x80808080;
+  uint32_t enable_mask = SW_HART_MASK;
   for (int i = 0; i < plicsw_ndevs; ++i) {
     uint32_t *enable = (void*)((uintptr_t)scan->reg + SW_ENABLE_BASE
                                           + SW_ENABLE_PER_HART * i);
