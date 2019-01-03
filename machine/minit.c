@@ -124,6 +124,11 @@ static void prci_test()
 
 static void hart_plic_init()
 {
+  // ipi wake up wfi under MSTATUS_MIE off, i.e. no software trap raised.
+  // plicsw pending bit has to be clear here
+  plic_sw_claim();
+  plic_sw_complete();
+
   // clear pending interrupts
   if (HLS()->ipi)
     *HLS()->ipi = 0;
@@ -189,11 +194,6 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
 void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
-  // ipi wake up wfi under MSTATUS_MIE off, i.e. no software trap raised.
-  // plicsw pending bit has to be clear here
-  plic_sw_claim();
-  plic_sw_complete();
-
   hart_init();
   hart_plic_init();
   boot_other_hart(dtb);
