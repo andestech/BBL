@@ -148,7 +148,7 @@ static void send_ipi_many(uintptr_t* pmask, int event)
 
   // if we got an IPI, restore it; it will be taken after returning
   if (incoming_ipi) {
-    plic_sw_pending(read_csr(mhartid));
+    *(HLS()->plic_sw.pending) = incoming_ipi;
     mb();
   }
 }
