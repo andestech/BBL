@@ -196,6 +196,7 @@ void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
   hart_plic_init();
+  trigger_init();
   boot_other_hart(dtb);
 }
 

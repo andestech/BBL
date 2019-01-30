@@ -1,11 +1,14 @@
 #include "trigger.h"
 #include "encoding.h"
 #include "mtrap.h"
+#include "atomic.h"
 
 /* Record the status of trigger used by M-mode */
-static struct trigger_module trigger_modules[TRIGGER_MAX] = {
-  [0 ... TRIGGER_MAX - 1] = {.used = 0, .type = TRIGGER_TYPE_MCONTROL} };
-static int total_triggers;
+static struct trigger_module trigger_modules[][TRIGGER_MAX] = {
+  [0 ... MAX_HARTS - 1][0 ... TRIGGER_MAX - 1] = {
+    .used = 0, .type = TRIGGER_TYPE_MCONTROL} };
+static int total_triggers = TRIGGER_MAX;
+static spinlock_t trigger_lock = SPINLOCK_INIT;
 
 void trigger_init(void)
 {
@@ -23,7 +26,11 @@ void trigger_init(void)
       break;
   }
 
-  total_triggers = i;
+  /* Only use the minimum number of trigger modules of all harts. */
+  spinlock_lock(&trigger_lock);
+  if (total_triggers > i)
+    total_triggers = i;
+  spinlock_unlock(&trigger_lock);
 }
 
 static int trigger_set_tselect(int val)
@@ -76,9 +83,9 @@ static int trigger_used_by_dmode(int num)
 
 static int trigger_get_free(void)
 {
-  int i;
+  int i, hartid = read_csr(mhartid);
   for (i = 0; i < total_triggers; i++) {
-    if (!trigger_modules[i].used && !trigger_used_by_dmode(i))
+    if (!trigger_modules[hartid][i].used && !trigger_used_by_dmode(i))
       break;
   }
   return i;
@@ -86,9 +93,10 @@ static int trigger_get_free(void)
 
 static int trigger_get_used_by_type(int type)
 {
-  int i;
+  int i, hartid = read_csr(mhartid);
   for (i = 0; i < total_triggers; i++) {
-    if (trigger_modules[i].type == type && trigger_modules[i].used)
+    if (trigger_modules[hartid][i].type == type
+        && trigger_modules[hartid][i].used)
       break;
   }
   return i;
@@ -109,6 +117,7 @@ int trigger_set_icount(uintptr_t count, unsigned int m,
 {
   uintptr_t val;
   int num, err;
+  int hartid = read_csr(mhartid);
 
   num = trigger_get_available(TRIGGER_TYPE_ICOUNT);
 
@@ -137,10 +146,10 @@ int trigger_set_icount(uintptr_t count, unsigned int m,
     return -1;
 
   if (u) {
-    trigger_modules[num].used = 1;
-    trigger_modules[num].type = TRIGGER_TYPE_ICOUNT;
+    trigger_modules[hartid][num].used = 1;
+    trigger_modules[hartid][num].type = TRIGGER_TYPE_ICOUNT;
   } else {
-    trigger_modules[num].used = 0;
+    trigger_modules[hartid][num].used = 0;
   }
 
   return err;
@@ -151,6 +160,7 @@ int trigger_set_itrigger(uintptr_t interrupt, unsigned int m,
 {
   uintptr_t val;
   int num, err;
+  int hartid = read_csr(mhartid);
 
   num = trigger_get_available(TRIGGER_TYPE_ITRIGGER);
 
@@ -184,10 +194,10 @@ int trigger_set_itrigger(uintptr_t interrupt, unsigned int m,
     return -1;
 
   if (u) {
-    trigger_modules[num].used = 1;
-    trigger_modules[num].type = TRIGGER_TYPE_ITRIGGER;
+    trigger_modules[hartid][num].used = 1;
+    trigger_modules[hartid][num].type = TRIGGER_TYPE_ITRIGGER;
   } else {
-    trigger_modules[num].used = 0;
+    trigger_modules[hartid][num].used = 0;
   }
 
   return err;
@@ -198,6 +208,7 @@ int trigger_set_etrigger(uintptr_t exception, unsigned int m,
 {
   uintptr_t val;
   int num, err;
+  int hartid = read_csr(mhartid);
 
   num = trigger_get_available(TRIGGER_TYPE_ETRIGGER);
 
@@ -229,10 +240,10 @@ int trigger_set_etrigger(uintptr_t exception, unsigned int m,
     return -1;
 
   if (u) {
-    trigger_modules[num].used = 1;
-    trigger_modules[num].type = TRIGGER_TYPE_ETRIGGER;
+    trigger_modules[hartid][num].used = 1;
+    trigger_modules[hartid][num].type = TRIGGER_TYPE_ETRIGGER;
   } else {
-    trigger_modules[num].used = 0;
+    trigger_modules[hartid][num].used = 0;
   }
 
   return err;
