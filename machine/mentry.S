@@ -273,6 +273,7 @@ do_reset:
   li x30, 0
   li x31, 0
   csrw mscratch, x0
+  csrw mstatus, x0
 
   # write mtvec and make sure it sticks
   la t0, trap_vector
