@@ -374,6 +374,82 @@ void query_clint(uintptr_t fdt)
   fdt_scan(fdt, &cb);
 }
 
+///////////////////////////////////////////// CACHE SCAN /////////////////////////////////////////
+struct cache_scan
+{
+  int compat;
+  uint64_t cache_level;
+  uint64_t reg;
+};
+
+static void cache_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct cache_scan *scan = (struct cache_scan *)extra;
+  scan->compat = 0;
+  scan->cache_level = 0;
+  scan->reg = 0;
+}
+
+static void cache_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct cache_scan *scan = (struct cache_scan *)extra;
+  if ((!strcmp(prop->name, "device_type") && (fdt_string_list_index(prop, "cpu") >= 0))
+      || (!strcmp(prop->name, "compatible") && (fdt_string_list_index(prop, "cache") >= 0))) {
+    scan->compat = 1;
+  } else if (!strcmp(prop->name, "i-cache-size")) {
+    scan->cache_level = 1;
+  } else if (!strcmp(prop->name, "d-cache-size")) {
+    scan->cache_level = 1;
+  } else if (!strcmp(prop->name, "cache-level")) {
+    scan->cache_level = bswap(prop->value[0]);
+  } else if (!strcmp(prop->name, "reg")) {
+    fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+  }
+}
+
+#define L2C_CTL_BASE		8
+#define L2C_CTL_ENABLE_MASK	1
+static void cache_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct cache_scan *scan = (struct cache_scan *)extra;
+
+  if (!scan->compat) return;
+
+  switch (scan->cache_level) {
+    case 1:
+    {
+      uintptr_t mcache_ctl = read_csr(mcache_ctl);
+      if (!(mcache_ctl & V5_MCACHE_CTL_CCTL_INIT))
+        write_csr(mcache_ctl, mcache_ctl | V5_MCACHE_CTL_CCTL_INIT);
+      break;
+    }
+    case 2:
+    {
+      uint32_t *l2_ctl_base = (void*)((uintptr_t)scan->reg + L2C_CTL_BASE);
+      uint32_t l2_ctl_val = *l2_ctl_base;
+      if (!(l2_ctl_val & L2C_CTL_ENABLE_MASK))
+        *l2_ctl_base = l2_ctl_val | L2C_CTL_ENABLE_MASK;
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+void query_cache(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct cache_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = cache_open;
+  cb.prop = cache_prop;
+  cb.done = cache_done;
+  cb.extra = &scan;
+
+  fdt_scan(fdt, &cb);
+}
+
 ///////////////////////////////////////////// PLMT SCAN /////////////////////////////////////////
 
 struct plmt_scan

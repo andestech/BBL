@@ -104,6 +104,13 @@ static void memory_init()
   mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
+static void cache_init()
+{
+  uintptr_t mcache_ctl = read_csr(mcache_ctl);
+  if (!(mcache_ctl & V5_MCACHE_CTL_CCTL_INIT))
+    write_csr(mcache_ctl, mcache_ctl | V5_MCACHE_CTL_CCTL_INIT);
+}
+
 static void hart_init()
 {
   mstatus_init();
@@ -186,6 +193,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_finisher(dtb);
 
   query_mem(dtb);
+  query_cache(dtb);
   query_harts(dtb);
   query_clint(dtb);
   query_plmt(dtb);
@@ -206,6 +214,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
+  cache_init();
   hart_plic_init();
   trigger_init();
   boot_other_hart(dtb);
@@ -216,10 +225,6 @@ void setup_pmp(void)
   // Set up a PMP to permit access to all of memory.
   // Ignore the illegal-instruction trap if PMPs aren't supported.
   uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
-
-  // Enable cache
-  uintptr_t mcache_ctl = read_csr(mcache_ctl);
-  write_csr(mcache_ctl, mcache_ctl | V5_MCACHE_CTL_CCTL_INIT);
 
   asm volatile ("la t0, 1f\n\t"
                 "csrrw t0, mtvec, t0\n\t"
