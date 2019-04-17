@@ -419,7 +419,7 @@ static void cache_done(const struct fdt_scan_node *node, void *extra)
     case 1:
     {
       uintptr_t mcache_ctl = read_csr(mcache_ctl);
-      if (!(mcache_ctl & V5_MCACHE_CTL_CCTL_INIT))
+      if ((mcache_ctl & V5_MCACHE_CTL_CCTL_INIT) != V5_MCACHE_CTL_CCTL_INIT)
         write_csr(mcache_ctl, mcache_ctl | V5_MCACHE_CTL_CCTL_INIT);
       break;
     }
