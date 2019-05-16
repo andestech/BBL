@@ -418,9 +418,14 @@ static void cache_done(const struct fdt_scan_node *node, void *extra)
   switch (scan->cache_level) {
     case 1:
     {
-      uintptr_t mcache_ctl = read_csr(mcache_ctl);
-      if ((mcache_ctl & V5_MCACHE_CTL_CCTL_INIT) != V5_MCACHE_CTL_CCTL_INIT)
-        write_csr(mcache_ctl, mcache_ctl | V5_MCACHE_CTL_CCTL_INIT);
+      uintptr_t mcache_ctl_val = read_csr(mcache_ctl);
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_IC_EN))
+        mcache_ctl_val |= V5_MCACHE_CTL_IC_EN;
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_DC_EN))
+        mcache_ctl_val |= V5_MCACHE_CTL_DC_EN;
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_CCTL_SUEN))
+        mcache_ctl_val |= V5_MCACHE_CTL_CCTL_SUEN;
+      write_csr(mcache_ctl, mcache_ctl_val);
       break;
     }
     case 2:
