@@ -33,5 +33,8 @@
 # define LOG_REGBYTES 2
 #endif
 #define REGBYTES (1 << LOG_REGBYTES)
-
+#define PUSH(which) addi sp, sp, -REGBYTES; STORE which, 0(sp)
+#define PUSH_CSR(csr) addi sp, sp, -REGBYTES; csrr t0, csr; STORE t0, 0(sp)
+#define POP(which)  LOAD which, 0(sp); addi sp, sp, REGBYTES
+#define POP_CSR(csr)  LOAD t0, 0(sp); addi sp, sp, REGBYTES; csrw csr, t0
 #endif
