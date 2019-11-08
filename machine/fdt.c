@@ -414,6 +414,8 @@ static void cache_prop(const struct fdt_scan_prop *prop, void *extra)
   }
 }
 
+int has_l2;
+
 static void cache_done(const struct fdt_scan_node *node, void *extra)
 {
   struct cache_scan *scan = (struct cache_scan *)extra;
@@ -440,6 +442,7 @@ static void cache_done(const struct fdt_scan_node *node, void *extra)
       if (!(l2c_ctl_val & V5_L2C_CTL_ENABLE_MASK))
         l2c_ctl_val |= V5_L2C_CTL_ENABLE_MASK;
 
+      has_l2 = 1;
       /* Set instruction and data prefetch depth */
       l2c_ctl_val &= ~(V5_L2C_CTL_IPFDPT_MASK | V5_L2C_CTL_DPFDPT_MASK);
       l2c_ctl_val |= scan->inst_prefetch << V5_L2C_CTL_IPFDPT_OFFSET;
