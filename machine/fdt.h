@@ -51,6 +51,13 @@ struct fdt_cb {
 void fdt_scan(uintptr_t fdt, const struct fdt_cb *cb);
 uint32_t fdt_size(uintptr_t fdt);
 
+static inline uint32_t bswap(uint32_t x)
+{
+  uint32_t y = (x & 0x00FF00FF) <<  8 | (x & 0xFF00FF00) >>  8;
+  uint32_t z = (y & 0x0000FFFF) << 16 | (y & 0xFFFF0000) >> 16;
+  return z;
+}
+
 // Extract fields
 const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *base, uint64_t *value);
 const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *base, uint64_t *value);

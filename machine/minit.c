@@ -183,13 +183,46 @@ static void wake_harts()
       plic_sw_pending(hart);
 }
 
+asm (
+".section .rodata\n\t"\
+".global uart_dtb_begin\n\t"\
+"uart_dtb_begin:\n\t"\
+".incbin \"uart.dtb\"\n\t"\
+".global uart_dtb_end\n\t"\
+"uart_dtb_end:\n\t"\
+".section .text\n\t"
+);
+
+extern char uart_dtb_begin[];
+extern char uart_dtb_end[];
+void no_dtb_file_handle()
+{
+	register uintptr_t a1 asm ("a1");
+	memcpy((char *)a1, uart_dtb_begin, uart_dtb_end - uart_dtb_begin);
+}
+
+
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
+  //checking your dtb
+  volatile int no_dtb = 0;
+  struct fdt_header *header = (struct fdt_header *)dtb;
+  if (bswap(header->magic) != FDT_MAGIC ||
+       bswap(header->last_comp_version) > FDT_VERSION)
+  {
+	no_dtb_file_handle();
+	no_dtb = 1;
+  }
+
   // Confirm console as early as possible
   query_uart(dtb);
   query_uart16550(dtb);
   query_htif(dtb);
-  printm("bbl loader\r\n");
+
+  if (no_dtb)
+	printm("please checking your dtb\r\n");
+  else
+	printm("bbl loader\r\n");
 
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
