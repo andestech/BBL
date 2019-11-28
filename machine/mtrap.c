@@ -14,6 +14,7 @@
 #include "disabled_hart_mask.h"
 #include "trigger.h"
 #include "smu.h"
+#include "encoding.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -114,7 +115,7 @@ static uintptr_t mcall_write_powerbrake(int val)
   return 0;
 }
 
-static uintptr_t mcall_suspend(char main_core, char enable)
+static uintptr_t mcall_suspend_prepare(char main_core, char enable)
 {
   if (main_core) {
 	/* 
@@ -237,6 +238,25 @@ static void send_ipi_many(uintptr_t* pmask, int event)
   }
 }
 
+static void mcall_restart(int cpu_nums)
+{
+  int i;
+  unsigned int *dev_ptr;
+  unsigned char *tmp;
+
+  for (i = 0; i < cpu_nums; i++) {
+    dev_ptr = (unsigned int *)((unsigned long)SMU_BASE + SMU_RESET_VEC_OFF
+				+ SMU_RESET_VEC_PER_CORE*i);
+    *dev_ptr = DRAM_BASE;
+  }
+
+  dev_ptr = (unsigned int *)((unsigned int)SMU_BASE + PCS0_CTL_OFF);
+  tmp = (unsigned char *)dev_ptr;
+  *tmp = RESET_CMD;
+  __asm__("wfi");
+  while(1){printm("reboot fail");}
+}
+
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   write_csr(mepc, mepc + 4);
@@ -290,7 +310,7 @@ send_ipi:
       retval = mcall_write_powerbrake(arg0);
       break;
     case SBI_SUSPEND_PREPARE:
-      retval = mcall_suspend(arg0, arg1);
+      retval = mcall_suspend_prepare(arg0, arg1);
       break;
     case SBI_SUSPEND_MEM:
       retval = mcall_suspend_backup();
@@ -303,6 +323,9 @@ send_ipi:
       break;
     case SBI_L1CACHE_STATUS:
       retval = mcall_l1cache_status();
+      break;
+    case SBI_RESTART:
+      mcall_restart(arg0);
       break;
     default:
       retval = -ENOSYS;
