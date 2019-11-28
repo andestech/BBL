@@ -142,36 +142,36 @@ static uintptr_t mcall_suspend(char main_core, char enable)
   return 0;
 }
 
-static uintptr_t mcall_dcache_op(char enable)
+static uintptr_t mcall_l1cache_status(void)
+{
+	return read_csr(mcache_ctl);
+}
+
+static uintptr_t mcall_dcache_op(unsigned int enable)
 {
 	if (enable)
 		set_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
 	else {
-		write_csr(0x80c, 0x6);
+		write_csr(ucctlcommand, V5_MCACHE_L1D_WBINVAL_ALL);
 		clear_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
 	}
+	return 0;
+}
 
+static uintptr_t mcall_icache_op(unsigned int enable)
+{
+	if (enable)
+		set_csr(mcache_ctl, V5_MCACHE_CTL_IC_EN);
+	else {
+		asm volatile("fence.i\n\t");
+		//write_csr(V5_MCACHE_UCCTL_CMD_REG, V5_MCACHE_L1I_WBINVAL_ALL);
+		clear_csr(mcache_ctl, V5_MCACHE_CTL_IC_EN);
+	}
 	return 0;
 }
 
 extern void cpu_suspend2ram(void);
 extern uint64_t hart_mask;
-
-static unsigned int get_pd_type(unsigned int cpu)
-{
-        unsigned long addr = SMU_BASE + CN_PCS_STATUS_OFF(cpu);
-        unsigned int val = *(unsigned int *)addr;
-
-        return GET_PD_TYPE(val);
-}
-
-static unsigned int get_pd_status(unsigned int cpu)
-{
-        unsigned long addr = SMU_BASE + CN_PCS_STATUS_OFF(cpu);
-        unsigned int val = *(unsigned int *)addr;
-
-        return GET_PD_STATUS(val);
-}
 
 static uintptr_t mcall_suspend_backup(void)
 {
@@ -292,11 +292,17 @@ send_ipi:
     case SBI_SUSPEND_PREPARE:
       retval = mcall_suspend(arg0, arg1);
       break;
+    case SBI_SUSPEND_MEM:
+      retval = mcall_suspend_backup();
+      break;
     case SBI_DCACHE_OP:
       retval = mcall_dcache_op(arg0);
       break;
-    case SBI_SUSPEND_MEM:
-      retval = mcall_suspend_backup();
+    case SBI_ICACHE_OP:
+      retval = mcall_icache_op(arg0);
+      break;
+    case SBI_L1CACHE_STATUS:
+      retval = mcall_l1cache_status();
       break;
     default:
       retval = -ENOSYS;
