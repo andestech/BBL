@@ -153,8 +153,8 @@ static uintptr_t mcall_dcache_op(unsigned int enable)
 	if (enable)
 		set_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
 	else {
-		write_csr(ucctlcommand, V5_MCACHE_L1D_WBINVAL_ALL);
 		clear_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
+		write_csr(ucctlcommand, V5_MCACHE_L1D_WBINVAL_ALL);
 	}
 	return 0;
 }
@@ -164,9 +164,8 @@ static uintptr_t mcall_icache_op(unsigned int enable)
 	if (enable)
 		set_csr(mcache_ctl, V5_MCACHE_CTL_IC_EN);
 	else {
-		asm volatile("fence.i\n\t");
-		//write_csr(V5_MCACHE_UCCTL_CMD_REG, V5_MCACHE_L1I_WBINVAL_ALL);
 		clear_csr(mcache_ctl, V5_MCACHE_CTL_IC_EN);
+		asm volatile("fence.i\n\t");
 	}
 	return 0;
 }
