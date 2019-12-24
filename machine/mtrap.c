@@ -13,7 +13,6 @@
 #include "unprivileged_memory.h"
 #include "disabled_hart_mask.h"
 #include "trigger.h"
-#include "smu.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -112,71 +111,6 @@ static uintptr_t mcall_write_powerbrake(int val)
 {
   write_csr(mpft_ctl, val);
   return 0;
-}
-
-static uintptr_t mcall_suspend(char main_core, char enable)
-{
-  if (main_core) {
-	/* 
-	 * Clear the mie.mtie, mie.msie, mie.meie,
-	 * it's bit field is align with mip.
-	 */
-	if (enable) {
-		set_csr(mie, MIP_MTIP);
-		set_csr(mie, MIP_MSIP);
-		set_csr(mie, MIP_MEIP);
-	} else {
-		clear_csr(mie, MIP_MTIP);
-		clear_csr(mie, MIP_MSIP);
-		clear_csr(mie, MIP_MEIP);
-	}
-  } else {
-	if (enable) {
-		set_csr(mie, MIP_MEIP);
-		set_csr(mie, MIP_MTIP);
-	} else {
-		clear_csr(mie, MIP_MEIP);
-		clear_csr(mie, MIP_MTIP);
-	}
-  }
-  return 0;
-}
-
-static uintptr_t mcall_dcache_op(char enable)
-{
-	if (enable)
-		set_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
-	else{
-		write_csr(0x80c, 0x6);
-		clear_csr(mcache_ctl, V5_MCACHE_CTL_DC_EN);
-	}
-
-	return 0;
-}
-
-extern void cpu_suspend2ram(void);
-extern uint64_t hart_mask;
-
-static unsigned int get_pd_type(unsigned int cpu)
-{
-        unsigned long addr = SMU_BASE + CN_PCS_STATUS_OFF(cpu);
-        unsigned int val = *(unsigned int *)addr;
-
-        return GET_PD_TYPE(val);
-}
-
-static unsigned int get_pd_status(unsigned int cpu)
-{
-        unsigned long addr = SMU_BASE + CN_PCS_STATUS_OFF(cpu);
-        unsigned int val = *(unsigned int *)addr;
-
-        return GET_PD_STATUS(val);
-}
-
-static uintptr_t mcall_suspend_backup(void)
-{
-	cpu_suspend2ram();
-	return 0;
 }
 
 static uintptr_t mcall_set_trigger(long type, uintptr_t data, unsigned int m,
@@ -288,15 +222,6 @@ send_ipi:
       break;
     case SBI_WRITE_POWERBRAKE:
       retval = mcall_write_powerbrake(arg0);
-      break;
-    case SBI_SUSPEND_PREPARE:
-      retval = mcall_suspend(arg0, arg1);
-      break;
-    case SBI_DCACHE_OP:
-      retval = mcall_dcache_op(arg0);
-      break;
-    case SBI_SUSPEND_MEM:
-      retval = mcall_suspend_backup();
       break;
     default:
       retval = -ENOSYS;

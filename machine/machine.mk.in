@@ -41,4 +41,3 @@ machine_c_srcs = \
 machine_asm_srcs = \
   mentry.S \
   fp_asm.S \
-  sleep.S \
