@@ -3,6 +3,7 @@
 
 .text
 .global cpu_suspend2ram
+.global cpu_resume
 
 cpu_suspend2ram:
 	# backup cpu register
@@ -241,6 +242,12 @@ test_sec:
 
 .align 2
 cpu_resume:
+	# Check if it come from NMI, go resume if not.
+	csrr	t0, mcause
+	beqz	t0, go_resume
+cpu_hang:
+	j	cpu_hang
+go_resume:
 	# load sp
 	li	t0, 0x20
 	li	t1, 3

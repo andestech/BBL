@@ -22,4 +22,5 @@
 #define SBI_ICACHE_OP 16
 #define SBI_L1CACHE_STATUS 17
 #define SBI_RESTART 18
+#define SBI_SET_RESET_VEC 19
 #endif

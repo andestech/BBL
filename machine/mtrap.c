@@ -256,6 +256,21 @@ static void mcall_restart(int cpu_nums)
   while(1){printm("reboot fail");}
 }
 
+extern void cpu_resume(void);
+static void mcall_set_reset_vec(int cpu_nums)
+{
+  int i;
+  unsigned int *dev_ptr;
+  unsigned int *tmp = (unsigned int *)&cpu_resume;
+
+  for (i = 0; i < cpu_nums; i++) {
+    dev_ptr = (unsigned int *)((unsigned long)SMU_BASE + SMU_RESET_VEC_OFF
+                                + SMU_RESET_VEC_PER_CORE*i);
+
+    *dev_ptr = (unsigned long)tmp;
+  }
+}
+
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   write_csr(mepc, mepc + 4);
@@ -325,6 +340,11 @@ send_ipi:
       break;
     case SBI_RESTART:
       mcall_restart(arg0);
+      retval = 0;
+      break;
+    case SBI_SET_RESET_VEC:
+      mcall_set_reset_vec(arg0);
+      retval = 0;
       break;
     default:
       retval = -ENOSYS;
