@@ -253,7 +253,7 @@ static void mcall_restart(int cpu_nums)
   tmp = (unsigned char *)dev_ptr;
   *tmp = RESET_CMD;
   __asm__("wfi");
-  while(1){printm("reboot fail");}
+  while(1){};
 }
 
 extern void cpu_resume(void);
