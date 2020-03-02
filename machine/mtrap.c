@@ -14,6 +14,7 @@
 #include "disabled_hart_mask.h"
 #include "trigger.h"
 #include "smu.h"
+#include "pma.h"
 #include "encoding.h"
 #include <errno.h>
 #include <stdarg.h>
@@ -271,6 +272,78 @@ static void mcall_set_reset_vec(int cpu_nums)
   }
 }
 
+static void mcall_set_pma(unsigned int pa, unsigned long va, unsigned long size)
+{
+  int i, power = 0;
+  unsigned long size_tmp, shift = 0, pmacfg_val;
+  char *pmaxcfg;
+  unsigned long mmsc = read_csr(mmsc_cfg);
+
+  if ((mmsc & PMA_MMSC_CFG) == 0)
+    return;
+
+  if ((pa & (size - 1)) !=0) {
+    pa = pa & ~(size - 1);
+    size = size << 1;
+  }
+
+  /* Calculate the NAPOT table for pmaaddr */
+  size_tmp = size;
+  while (size_tmp != 0x1) {
+    size_tmp = size_tmp >> 1;
+    power++;
+    if (power > 3)
+      shift = (shift << 1) | 0x1;
+  }
+
+  for (i = 0; i < PMA_NUM; i++) {
+    if (!pma_used_table[i]) {
+      pma_used_table[i] = va;
+      pa = pa >> 2;
+      pa = pa | shift;
+      pa = pa & ~(0x1 << (power - 3));
+#if __riscv_xlen == 64
+      pmacfg_val = read_pmacfg(i / 8);
+      pmaxcfg = (char *)&pmacfg_val;
+      pmaxcfg = pmaxcfg + (i % 8);
+      *pmaxcfg = 0;
+      *pmaxcfg = *pmaxcfg | PMA_NAPOT;
+      *pmaxcfg = *pmaxcfg | PMA_NOCACHE_BUFFER;
+      write_pmacfg(i / 8, pmacfg_val);
+#else
+      pmacfg_val = read_pmacfg(i / 4);
+      pmaxcfg = (char *)&pmacfg_val;
+      pmaxcfg = pmaxcfg + (i % 4);
+      *pmaxcfg = 0;
+      *pmaxcfg = *pmaxcfg | PMA_NAPOT;
+      *pmaxcfg = *pmaxcfg | PMA_NOCACHE_BUFFER;
+      write_pmacfg(i / 4, pmacfg_val);
+#endif
+      write_pmaaddr(i, pa);
+      return;
+    }
+  }
+  /* There is no available pma register */
+  __asm__("ebreak");
+}
+
+static void mcall_free_pma(unsigned long va)
+{
+  int i;
+
+  for(i = 0 ; i < PMA_NUM; i++) {
+    if(pma_used_table[i] == va) {
+      pma_used_table[i] = 0;
+#if __riscv_xlen == 64
+      write_pmacfg(i / 8, 0);
+#else
+      write_pmacfg(i / 4, 0);
+#endif
+      return;
+    }
+  }
+}
+
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   write_csr(mepc, mepc + 4);
@@ -344,6 +417,14 @@ send_ipi:
       break;
     case SBI_SET_RESET_VEC:
       mcall_set_reset_vec(arg0);
+      retval = 0;
+      break;
+    case SBI_SET_PMA:
+      mcall_set_pma(arg0, arg1, arg2);
+      retval = 0;
+      break;
+    case SBI_FREE_PMA:
+      mcall_free_pma(arg0);
       retval = 0;
       break;
     default:

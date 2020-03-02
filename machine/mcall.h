@@ -23,4 +23,6 @@
 #define SBI_L1CACHE_STATUS 17
 #define SBI_RESTART 18
 #define SBI_SET_RESET_VEC 19
+#define SBI_SET_PMA 20
+#define SBI_FREE_PMA 21
 #endif
