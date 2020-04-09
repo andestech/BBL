@@ -129,6 +129,19 @@
 #define SATP_MODE_SV57 10
 #define SATP_MODE_SV64 11
 
+/* nds v5 mmisc_ctl register*/
+#define V5_MMISC_CTL_VEC_PLIC_OFFSET            1
+#define V5_MMISC_CTL_RVCOMPM_OFFSET             2
+#define V5_MMISC_CTL_BRPE_OFFSET                3
+#define V5_MMISC_CTL_MSA_OR_UNA_OFFSET          6
+#define V5_MMISC_CTL_NON_BLOCKING_OFFSET        8
+
+#define V5_MMISC_CTL_VEC_PLIC_EN        (1UL << V5_MMISC_CTL_VEC_PLIC_OFFSET)
+#define V5_MMISC_CTL_RVCOMPM_EN         (1UL << V5_MMISC_CTL_RVCOMPM_OFFSET)
+#define V5_MMISC_CTL_BRPE_EN            (1UL << V5_MMISC_CTL_BRPE_OFFSET)
+#define V5_MMISC_CTL_MSA_OR_UNA_EN      (1UL << V5_MMISC_CTL_MSA_OR_UNA_OFFSET)
+#define V5_MMISC_CTL_NON_BLOCKING_EN    (1UL << V5_MMISC_CTL_NON_BLOCKING_OFFSET)
+
 /* nds v5 mcache_ctl register*/
 #define V5_MCACHE_CTL_IC_EN_OFFSET	0
 #define V5_MCACHE_CTL_DC_EN_OFFSET	1
