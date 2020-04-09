@@ -432,6 +432,12 @@ static void cache_done(const struct fdt_scan_node *node, void *extra)
         mcache_ctl_val |= V5_MCACHE_CTL_DC_EN;
       if (!(mcache_ctl_val & V5_MCACHE_CTL_CCTL_SUEN))
         mcache_ctl_val |= V5_MCACHE_CTL_CCTL_SUEN;
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_L1L_PREFETCH_EN))
+	mcache_ctl_val |= V5_MCACHE_CTL_L1L_PREFETCH_EN;
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_L1D_PREFETCH_EN))
+	mcache_ctl_val |= V5_MCACHE_CTL_L1D_PREFETCH_EN;
+      if (!(mcache_ctl_val & V5_MCACHE_CTL_DC_WAROUND_1_EN))
+	mcache_ctl_val |= V5_MCACHE_CTL_DC_WAROUND_1_EN;
       write_csr(mcache_ctl, mcache_ctl_val);
       break;
     }
