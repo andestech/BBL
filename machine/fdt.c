@@ -439,6 +439,13 @@ static void cache_done(const struct fdt_scan_node *node, void *extra)
       if (!(mcache_ctl_val & V5_MCACHE_CTL_DC_WAROUND_1_EN))
 	mcache_ctl_val |= V5_MCACHE_CTL_DC_WAROUND_1_EN;
       write_csr(mcache_ctl, mcache_ctl_val);
+
+      /* Enable non-blocking load store */
+      uintptr_t mmisc_ctl_val = read_csr(mmisc_ctl);
+      if (!(mmisc_ctl_val & V5_MMISC_CTL_NON_BLOCKING_EN))
+        mmisc_ctl_val |= V5_MMISC_CTL_NON_BLOCKING_EN;
+      write_csr(mmisc_ctl, mmisc_ctl_val);
+
       break;
     }
     case 2:
