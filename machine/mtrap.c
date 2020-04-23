@@ -427,6 +427,10 @@ send_ipi:
       mcall_free_pma(arg0);
       retval = 0;
       break;
+    case SBI_PROBE_PMA:
+      /* PPMA bit [30] */
+      retval = ((read_csr(mmsc_cfg) & 0x40000000) != 0);
+      break;
     default:
       retval = -ENOSYS;
       break;

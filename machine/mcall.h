@@ -25,4 +25,5 @@
 #define SBI_SET_RESET_VEC 19
 #define SBI_SET_PMA 20
 #define SBI_FREE_PMA 21
+#define SBI_PROBE_PMA 22
 #endif
