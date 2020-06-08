@@ -219,8 +219,10 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_uart16550(dtb);
   query_htif(dtb);
 
-  if (no_dtb)
-	printm("please checking your dtb\r\n");
+  if (no_dtb) {
+	printm("Sorry, this Bitmap does not yet support built-in DTB.\r\n");
+	printm("Please load DTB manually.\r\n");
+  }
   else
 	printm("bbl loader\r\n");
 
