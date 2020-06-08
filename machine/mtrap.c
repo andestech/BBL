@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+extern void init_first_hart();
 void __attribute__((noreturn)) bad_trap(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
   die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), mepc);
@@ -477,10 +478,15 @@ void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 
   switch (mcause)
   {
+    case CAUSE_LOAD_ACCESS:
+      {
+	uintptr_t dtb_address = read_csr(mtval);
+	if(dtb_address == 0xf2000000)
+		init_first_hart();
+      }
     case CAUSE_LOAD_PAGE_FAULT:
     case CAUSE_STORE_PAGE_FAULT:
     case CAUSE_FETCH_ACCESS:
-    case CAUSE_LOAD_ACCESS:
     case CAUSE_STORE_ACCESS:
       return machine_page_fault(regs, dummy, mepc);
     default:

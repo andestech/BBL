@@ -202,11 +202,17 @@ void no_dtb_file_handle()
 }
 
 
-void init_first_hart(uintptr_t hartid, uintptr_t dtb)
+extern void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
-  //checking your dtb
   volatile int no_dtb = 0;
   struct fdt_header *header = (struct fdt_header *)dtb;
+
+  //checking a1's argument
+  if(dtb == 0)
+    dtb = 0xf2000000;
+
+
+  //checking your dtb
   if (bswap(header->magic) != FDT_MAGIC ||
        bswap(header->last_comp_version) > FDT_VERSION)
   {
