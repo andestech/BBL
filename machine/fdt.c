@@ -7,6 +7,13 @@
 #include "fdt.h"
 #include "mtrap.h"
 
+char *isa_str;
+int coherent_flag = 0;
+int dsp_flag = 0;
+int fpu_flag = 0;
+int smp_flag = 0;
+int cpu_numble = 0;
+
 static inline int isstring(char c)
 {
   if (c >= 'A' && c <= 'Z')
@@ -230,6 +237,7 @@ static void hart_prop(const struct fdt_scan_prop *prop, void *extra)
   if (!strcmp(prop->name, "device_type") && !strcmp((const char*)prop->value, "cpu")) {
     assert (!scan->cpu);
     scan->cpu = prop->node;
+    cpu_numble++;
   } else if (!strcmp(prop->name, "interrupt-controller")) {
     assert (!scan->controller);
     scan->controller = prop->node;
@@ -928,6 +936,7 @@ struct hart_filter {
   int hart;
   char *status;
   char *mmu_type;
+  char *isa;
   long *disabled_hart_mask;
 };
 
@@ -936,6 +945,7 @@ static void hart_filter_open(const struct fdt_scan_node *node, void *extra)
   struct hart_filter *filter = (struct hart_filter *)extra;
   filter->status = NULL;
   filter->mmu_type = NULL;
+  filter->isa = NULL;
   filter->compat = 0;
   filter->hart = -1;
 }
@@ -953,6 +963,11 @@ static void hart_filter_prop(const struct fdt_scan_prop *prop, void *extra)
     filter->status = (char*)prop->value;
   } else if (!strcmp(prop->name, "mmu-type")) {
     filter->mmu_type = (char*)prop->value;
+  } else if (!strcmp(prop->name, "riscv,isa")) {
+    filter->isa = (char*)prop->value;
+    isa_str = (char*)prop->value;
+  } else if(!strcmp(prop->name, "dma-coherent")) {
+    coherent_flag = 1;
   }
 }
 
@@ -984,6 +999,8 @@ static void hart_filter_done(const struct fdt_scan_node *node, void *extra)
   }
 }
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
 void filter_harts(uintptr_t fdt, long *disabled_hart_mask)
 {
   struct fdt_cb cb;
@@ -998,7 +1015,50 @@ void filter_harts(uintptr_t fdt, long *disabled_hart_mask)
   filter.disabled_hart_mask = disabled_hart_mask;
   *disabled_hart_mask = 0;
   fdt_scan(fdt, &cb);
+
+  /* search built-in DTB*/
+  printm("We suggest use ae350_c%d_",cpu_numble);
+
+  if(cpu_numble > 1)
+	smp_flag = 1;
+
+  if(coherent_flag == 0 && smp_flag ==0)
+	printm("noncoherent_");
+
+  char *source = isa_str;
+  char *search_cputype = "rv64";
+
+  char *cpu = strstr(source,search_cputype);
+  if(cpu == NULL)
+	printm("32");
+  else
+	printm("64");
+
+  char *search_fpu = "f";
+  char *fpu = strstr(source,search_fpu);
+  if(fpu != NULL)
+	fpu_flag = 1;
+
+  char *search_dsp = "dsp";
+  char *dsp = strstr(source,search_dsp);
+  if(dsp != NULL)
+	dsp_flag = 1;
+
+  if(fpu_flag == 1 && dsp_flag ==1)
+	printm("_d_dsp");
+  else if(fpu_flag == 1)
+	printm("_d");
+  else if(dsp_flag ==1)
+	printm("_dsp");
+
+  printm(".dtb");
+  printm(" by Built-in DTB information\n");
+
+  printm("CPU's Core=%d, isa string = %s\n",filter.hart+1,isa_str);
+
 }
+
+#pragma GCC pop_options
 
 //////////////////////////////////////////// PRINT //////////////////////////////////////////////
 
