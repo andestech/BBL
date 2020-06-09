@@ -1054,7 +1054,7 @@ void filter_harts(uintptr_t fdt, long *disabled_hart_mask)
   printm(".dtb");
   printm(" by Built-in DTB information\n");
 
-  printm("CPU's Core=%d, isa string = %s\n",filter.hart+1,isa_str);
+  printm("CPU's Core=%d, isa string = %s\n",cpu_numble,isa_str);
 
 }
 
