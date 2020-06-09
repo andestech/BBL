@@ -202,7 +202,7 @@ void no_dtb_file_handle()
 }
 
 
-extern void init_first_hart(uintptr_t hartid, uintptr_t dtb)
+void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
   volatile int no_dtb = 0;
   struct fdt_header *header = (struct fdt_header *)dtb;
